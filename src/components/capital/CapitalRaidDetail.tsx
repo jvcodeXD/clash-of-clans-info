@@ -1,0 +1,305 @@
+"use client";
+
+import {
+  Modal,
+  Stack,
+  Text,
+  Group,
+  Badge,
+  Avatar,
+  Paper,
+  SimpleGrid,
+  Progress,
+  ThemeIcon,
+  Divider,
+  ScrollArea,
+} from "@mantine/core";
+import { IconSword, IconShield, IconStar } from "@tabler/icons-react";
+import {
+  CapitalRaidSeason,
+  CapitalRaidLogEntry,
+  CapitalRaidDistrict,
+} from "@/types/clash";
+
+interface CapitalRaidDetailProps {
+  season: CapitalRaidSeason | null;
+  opened: boolean;
+  onClose: () => void;
+}
+
+function formatDate(time: string) {
+  return new Date(
+    time.replace(
+      /(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/,
+      "$1-$2-$3T$4:$5:$6",
+    ),
+  ).toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function DistrictRow({ district }: { district: CapitalRaidDistrict }) {
+  return (
+    <Paper p="sm" radius="md" withBorder>
+      <Group justify="space-between" mb={4}>
+        <Group gap="xs">
+          <Text size="sm" fw={600}>
+            {district.name}
+          </Text>
+          <Badge size="xs" variant="light" color="gray">
+            Nivel {district.districtHallLevel}
+          </Badge>
+        </Group>
+        <Group gap="xs">
+          <Text size="xs">{"⭐".repeat(district.stars)}</Text>
+          <Badge
+            size="xs"
+            color={
+              district.destructionPercent === 100
+                ? "green"
+                : district.destructionPercent > 0
+                  ? "yellow"
+                  : "red"
+            }
+            variant="light"
+          >
+            {district.destructionPercent}%
+          </Badge>
+        </Group>
+      </Group>
+      <Progress
+        value={district.destructionPercent}
+        color={
+          district.destructionPercent === 100
+            ? "green"
+            : district.destructionPercent > 0
+              ? "yellow"
+              : "gray"
+        }
+        size="sm"
+        radius="xl"
+        mb={4}
+      />
+      <Text size="xs" c="dimmed">
+        {district.attackCount} ataques · {district.totalLooted.toLocaleString()}{" "}
+        oro saqueado
+      </Text>
+    </Paper>
+  );
+}
+
+function RaidLogEntry({
+  entry,
+  type,
+}: {
+  entry: CapitalRaidLogEntry;
+  type: "attack" | "defense";
+}) {
+  const clan = type === "attack" ? entry.defender : entry.attacker;
+  const isAttack = type === "attack";
+
+  return (
+    <Paper p="md" radius="md" withBorder>
+      <Group justify="space-between" mb="sm">
+        <Group gap="sm">
+          <Avatar src={clan?.badgeUrls?.medium} size={36} radius="sm" />
+          <Stack gap={0}>
+            <Text size="sm" fw={700}>
+              {clan?.name ?? "Desconocido"}
+            </Text>
+            <Text size="xs" c="dimmed">
+              Nivel {clan?.level}
+            </Text>
+          </Stack>
+        </Group>
+        <Stack gap={2} align="flex-end">
+          <Badge color={isAttack ? "green" : "red"} variant="light">
+            {entry.districtsDestroyed}/{entry.districtCount} distritos
+          </Badge>
+          <Text size="xs" c="dimmed">
+            {entry.attackCount} ataques usados
+          </Text>
+        </Stack>
+      </Group>
+      <Stack gap="xs">
+        {entry.districts.map((d) => (
+          <DistrictRow key={d.id} district={d} />
+        ))}
+      </Stack>
+    </Paper>
+  );
+}
+
+export default function CapitalRaidDetail({
+  season,
+  opened,
+  onClose,
+}: CapitalRaidDetailProps) {
+  if (!season) return null;
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <Group gap="sm">
+          <Text fw={700}>Detalle de Raid Capital</Text>
+          <Badge
+            color={season.state === "ongoing" ? "green" : "gray"}
+            variant="filled"
+          >
+            {season.state === "ongoing" ? "En curso" : "Finalizada"}
+          </Badge>
+        </Group>
+      }
+      size="xl"
+      centered
+      scrollAreaComponent={ScrollArea.Autosize}
+    >
+      <Stack gap="md">
+        <Text size="xs" c="dimmed">
+          {formatDate(season.startTime)} → {formatDate(season.endTime)}
+        </Text>
+
+        {/* Summary */}
+        <SimpleGrid cols={{ base: 2, sm: 4 }}>
+          <Paper p="sm" radius="md" withBorder>
+            <Stack gap={0} align="center">
+              <Text size="xl" fw={900} c="yellow">
+                {season.capitalTotalLoot.toLocaleString()}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Oro saqueado
+              </Text>
+            </Stack>
+          </Paper>
+          <Paper p="sm" radius="md" withBorder>
+            <Stack gap={0} align="center">
+              <Text size="xl" fw={900} c="green">
+                {season.raidsCompleted}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Raids completas
+              </Text>
+            </Stack>
+          </Paper>
+          <Paper p="sm" radius="md" withBorder>
+            <Stack gap={0} align="center">
+              <Text size="xl" fw={900} c="blue">
+                {season.totalAttacks}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Ataques totales
+              </Text>
+            </Stack>
+          </Paper>
+          <Paper p="sm" radius="md" withBorder>
+            <Stack gap={0} align="center">
+              <Text size="xl" fw={900} c="orange">
+                {season.enemyDistrictsDestroyed}
+              </Text>
+              <Text size="xs" c="dimmed">
+                Distritos destruidos
+              </Text>
+            </Stack>
+          </Paper>
+        </SimpleGrid>
+
+        {/* Members */}
+        {season.members && season.members.length > 0 && (
+          <Stack gap="xs">
+            <Group gap="xs">
+              <ThemeIcon color="yellow" variant="light" size="sm">
+                <IconStar size={12} />
+              </ThemeIcon>
+              <Text fw={600} size="sm">
+                Participantes
+              </Text>
+            </Group>
+            {[...season.members]
+              .sort(
+                (a, b) => b.capitalResourcesLooted - a.capitalResourcesLooted,
+              )
+              .map((m, i) => (
+                <Paper key={m.tag} p="sm" radius="md" withBorder>
+                  <Group justify="space-between">
+                    <Group gap="xs">
+                      <Text size="sm" c="dimmed">
+                        #{i + 1}
+                      </Text>
+                      <Avatar color="yellow" radius="xl" size="sm">
+                        {m.name.charAt(0)}
+                      </Avatar>
+                      <Text size="sm" fw={600}>
+                        {m.name}
+                      </Text>
+                    </Group>
+                    <Group gap="md">
+                      <Stack gap={0} align="center">
+                        <Text size="sm" fw={700} c="yellow">
+                          {m.capitalResourcesLooted.toLocaleString()}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          oro
+                        </Text>
+                      </Stack>
+                      <Badge
+                        color={
+                          m.attacks >= m.attackLimit
+                            ? "green"
+                            : m.attacks > 0
+                              ? "yellow"
+                              : "red"
+                        }
+                        variant="light"
+                      >
+                        {m.attacks}/{m.attackLimit + m.bonusAttackLimit} ataques
+                      </Badge>
+                    </Group>
+                  </Group>
+                </Paper>
+              ))}
+          </Stack>
+        )}
+
+        <Divider />
+
+        {/* Attack log */}
+        {season.attackLog.length > 0 && (
+          <Stack gap="xs">
+            <Group gap="xs">
+              <ThemeIcon color="green" variant="light" size="sm">
+                <IconSword size={12} />
+              </ThemeIcon>
+              <Text fw={600} size="sm">
+                Clanes atacados
+              </Text>
+            </Group>
+            {season.attackLog.map((entry, i) => (
+              <RaidLogEntry key={i} entry={entry} type="attack" />
+            ))}
+          </Stack>
+        )}
+
+        {/* Defense log */}
+        {season.defenseLog.length > 0 && (
+          <Stack gap="xs">
+            <Group gap="xs">
+              <ThemeIcon color="red" variant="light" size="sm">
+                <IconShield size={12} />
+              </ThemeIcon>
+              <Text fw={600} size="sm">
+                Clanes que nos atacaron
+              </Text>
+            </Group>
+            {season.defenseLog.map((entry, i) => (
+              <RaidLogEntry key={i} entry={entry} type="defense" />
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    </Modal>
+  );
+}

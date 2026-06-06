@@ -246,3 +246,39 @@ export interface PlayerDetail {
   heroEquipment: PlayerHeroEquipment[];
   spells: PlayerSpell[];
 }
+
+export interface CWLClanMember {
+  tag: string;
+  name: string;
+  townHallLevel: number;
+}
+
+export interface CWLClan {
+  tag: string;
+  name: string;
+  clanLevel: number;
+  badgeUrls: BadgeUrls;
+  members: CWLClanMember[];
+}
+
+export interface CWLRound {
+  warTags: string[];
+}
+
+export interface CWLGroup {
+  state: string;
+  season: string;
+  clans: CWLClan[];
+  rounds: CWLRound[];
+}
+
+export interface CWLWar {
+  state: string;
+  teamSize: number;
+  preparationStartTime: string;
+  startTime: string;
+  endTime: string;
+  clan: WarClan;
+  opponent: WarClan;
+  warStartTime?: string;
+}

@@ -21,6 +21,7 @@ import {
   IconAlertCircle,
   IconBuildingCastle,
   IconBell,
+  IconShield,
 } from "@tabler/icons-react";
 import ClanHeader from "@/components/ClanHeader";
 import MembersView from "@/components/MembersView";
@@ -31,11 +32,14 @@ import {
   CurrentWar,
   WarLogEntry,
   CapitalRaidSeason,
+  CWLGroup,
+  CWLWar,
 } from "@/types/clash";
 import StatsView from "@/components/stats/StatsView";
 import { IconChartBar } from "@tabler/icons-react";
 import CapitalView from "@/components/capital/CapitalView";
 import AlertsView from "@/components/alerts/AlertsView";
+import CWLView from "@/components/cwl/CWLView";
 
 const REFRESH_INTERVAL = 60000;
 
@@ -45,29 +49,41 @@ interface AppData {
   currentWar: CurrentWar | null;
   warLog: WarLogEntry[];
   capitalSeasons: CapitalRaidSeason[];
+  cwlGroup: CWLGroup | null;
+  cwlWars: CWLWar[];
+  cwlAllWars: CWLWar[];
+  notInCWL: boolean;
 }
 
 async function fetchAllData(): Promise<AppData> {
-  const [clanRes, membersRes, warsRes, capitalRes] = await Promise.all([
+  const [clanRes, membersRes, warsRes, capitalRes, cwlRes] = await Promise.all([
     fetch("/api/clan"),
     fetch("/api/members"),
     fetch("/api/wars"),
     fetch("/api/capital"),
+    fetch("/api/cwl"),
   ]);
 
   if (!clanRes.ok || !membersRes.ok || !warsRes.ok) {
     throw new Error("Error al obtener datos de la API");
   }
 
-  const [clanData, membersData, warsData, capitalData] = await Promise.all([
-    clanRes.json() as Promise<Clan>,
-    membersRes.json() as Promise<{ items: Member[] }>,
-    warsRes.json() as Promise<{
-      currentWar: CurrentWar;
-      warLog: { items: WarLogEntry[] };
-    }>,
-    capitalRes.json() as Promise<{ items: CapitalRaidSeason[] }>,
-  ]);
+  const [clanData, membersData, warsData, capitalData, cwlData] =
+    await Promise.all([
+      clanRes.json() as Promise<Clan>,
+      membersRes.json() as Promise<{ items: Member[] }>,
+      warsRes.json() as Promise<{
+        currentWar: CurrentWar;
+        warLog: { items: WarLogEntry[] };
+      }>,
+      capitalRes.json() as Promise<{ items: CapitalRaidSeason[] }>,
+      cwlRes.json() as Promise<{
+        group: CWLGroup;
+        wars: CWLWar[];
+        notInCWL?: boolean;
+        allWars: CWLWar[];
+      }>,
+    ]);
 
   return {
     clan: clanData,
@@ -75,6 +91,10 @@ async function fetchAllData(): Promise<AppData> {
     currentWar: warsData.currentWar,
     warLog: warsData.warLog?.items || [],
     capitalSeasons: capitalData.items || [],
+    cwlGroup: cwlData.group || null,
+    cwlWars: cwlData.wars || [],
+    cwlAllWars: cwlData.allWars || [],
+    notInCWL: cwlData.notInCWL || false,
   };
 }
 
@@ -85,6 +105,10 @@ export default function HomePage() {
     currentWar: null,
     warLog: [],
     capitalSeasons: [],
+    cwlGroup: null,
+    cwlWars: [],
+    cwlAllWars: [],
+    notInCWL: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -188,6 +212,9 @@ export default function HomePage() {
               <Tabs.Tab value="alerts" leftSection={<IconBell size={16} />}>
                 Alertas
               </Tabs.Tab>
+              <Tabs.Tab value="cwl" leftSection={<IconShield size={16} />}>
+                Liga CWL
+              </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="members" pt="md">
@@ -212,6 +239,15 @@ export default function HomePage() {
                 members={data.members}
                 currentWar={data.currentWar}
                 capitalSeasons={data.capitalSeasons}
+              />
+            </Tabs.Panel>
+            <Tabs.Panel value="cwl" pt="md">
+              <CWLView
+                group={data.cwlGroup}
+                wars={data.cwlWars}
+                allWars={data.cwlAllWars}
+                ourClanTag={data.clan?.tag || ""}
+                notInCWL={data.notInCWL}
               />
             </Tabs.Panel>
           </Tabs>

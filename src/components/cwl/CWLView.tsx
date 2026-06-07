@@ -17,6 +17,7 @@ import {
   IconSword,
   IconStar,
   IconChartBar,
+  IconShield,
 } from "@tabler/icons-react";
 import { CWLGroup, CWLWar } from "@/types/clash";
 import CWLGroupStandings from "./CWLGroupStandings";
@@ -89,7 +90,14 @@ export default function CWLView({
             value={cwlTab}
             onChange={setCwlTab}
             mb="md"
-            size="sm"
+            size="md"
+            label="Vista CWL"
+            leftSection={<IconShield size={16} />}
+            styles={{
+              input: {
+                fontWeight: 600,
+              },
+            }}
           />
         ) : (
           <Tabs.List>

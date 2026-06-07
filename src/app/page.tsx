@@ -24,6 +24,7 @@ import {
   IconBuildingCastle,
   IconBell,
   IconShield,
+  IconLayoutGrid,
 } from "@tabler/icons-react";
 import ClanHeader from "@/components/ClanHeader";
 import MembersView from "@/components/MembersView";
@@ -200,7 +201,14 @@ export default function HomePage() {
                 value={activeTab}
                 onChange={setActiveTab}
                 mb="md"
-                size="sm"
+                size="md"
+                label="Sección"
+                leftSection={<IconLayoutGrid size={16} />}
+                styles={{
+                  input: {
+                    fontWeight: 600,
+                  },
+                }}
               />
             ) : (
               <Tabs.List>

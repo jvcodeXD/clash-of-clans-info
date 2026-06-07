@@ -23,6 +23,7 @@ import CWLGroupStandings from "./CWLGroupStandings";
 import CWLRoundCard from "./CWLRoundCard";
 import CWLPlayerStats from "./CWLPlayerStats";
 import CWLStats from "./CWLStats";
+import { useState } from "react";
 
 interface CWLViewProps {
   group: CWLGroup | null;
@@ -47,6 +48,7 @@ export default function CWLView({
   notInCWL,
 }: CWLViewProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const [cwlTab, setCwlTab] = useState<string | null>("standings");
 
   if (notInCWL || !group) {
     return (
@@ -80,11 +82,12 @@ export default function CWLView({
         </Group>
       </Group>
 
-      <Tabs defaultValue="standings">
+      <Tabs value={cwlTab} onChange={setCwlTab}>
         {isMobile ? (
           <Select
             data={cwlTabOptions}
-            defaultValue="standings"
+            value={cwlTab}
+            onChange={setCwlTab}
             mb="md"
             size="sm"
           />

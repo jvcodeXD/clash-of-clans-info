@@ -19,6 +19,7 @@ import {
   IconSword,
   IconRefresh,
   IconAlertCircle,
+  IconChartBar,
   IconBuildingCastle,
   IconBell,
   IconShield,
@@ -26,6 +27,10 @@ import {
 import ClanHeader from "@/components/ClanHeader";
 import MembersView from "@/components/MembersView";
 import WarsView from "@/components/wars/WarsView";
+import StatsView from "@/components/stats/StatsView";
+import CapitalView from "@/components/capital/CapitalView";
+import AlertsView from "@/components/alerts/AlertsView";
+import CWLView from "@/components/cwl/CWLView";
 import {
   Clan,
   Member,
@@ -35,110 +40,100 @@ import {
   CWLGroup,
   CWLWar,
 } from "@/types/clash";
-import StatsView from "@/components/stats/StatsView";
-import { IconChartBar } from "@tabler/icons-react";
-import CapitalView from "@/components/capital/CapitalView";
-import AlertsView from "@/components/alerts/AlertsView";
-import CWLView from "@/components/cwl/CWLView";
 
-const REFRESH_INTERVAL = 60000;
-
-interface AppData {
+interface MainData {
   clan: Clan | null;
   members: Member[];
   currentWar: CurrentWar | null;
   warLog: WarLogEntry[];
   capitalSeasons: CapitalRaidSeason[];
+}
+
+interface CWLData {
   cwlGroup: CWLGroup | null;
   cwlWars: CWLWar[];
   cwlAllWars: CWLWar[];
   notInCWL: boolean;
 }
 
-async function fetchAllData(): Promise<AppData> {
-  const [clanRes, membersRes, warsRes, capitalRes, cwlRes] = await Promise.all([
-    fetch("/api/clan"),
-    fetch("/api/members"),
-    fetch("/api/wars"),
-    fetch("/api/capital"),
-    fetch("/api/cwl"),
-  ]);
-
-  if (!clanRes.ok || !membersRes.ok || !warsRes.ok) {
-    throw new Error("Error al obtener datos de la API");
-  }
-
-  const [clanData, membersData, warsData, capitalData, cwlData] =
-    await Promise.all([
-      clanRes.json() as Promise<Clan>,
-      membersRes.json() as Promise<{ items: Member[] }>,
-      warsRes.json() as Promise<{
-        currentWar: CurrentWar;
-        warLog: { items: WarLogEntry[] };
-      }>,
-      capitalRes.json() as Promise<{ items: CapitalRaidSeason[] }>,
-      cwlRes.json() as Promise<{
-        group: CWLGroup;
-        wars: CWLWar[];
-        notInCWL?: boolean;
-        allWars: CWLWar[];
-      }>,
-    ]);
-
-  return {
-    clan: clanData,
-    members: membersData.items || [],
-    currentWar: warsData.currentWar,
-    warLog: warsData.warLog?.items || [],
-    capitalSeasons: capitalData.items || [],
-    cwlGroup: cwlData.group || null,
-    cwlWars: cwlData.wars || [],
-    cwlAllWars: cwlData.allWars || [],
-    notInCWL: cwlData.notInCWL || false,
-  };
-}
-
 export default function HomePage() {
-  const [data, setData] = useState<AppData>({
+  const [mainData, setMainData] = useState<MainData>({
     clan: null,
     members: [],
     currentWar: null,
     warLog: [],
     capitalSeasons: [],
+  });
+  const [cwlData, setCwlData] = useState<CWLData>({
     cwlGroup: null,
     cwlWars: [],
     cwlAllWars: [],
     notInCWL: false,
   });
   const [loading, setLoading] = useState(true);
+  const [cwlLoading, setCwlLoading] = useState(false);
+  const [cwlLoaded, setCwlLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>("members");
 
-  const loadData = useCallback((isManual = false) => {
+  const loadMainData = useCallback((isManual = false) => {
     if (isManual) setRefreshing(true);
 
-    fetchAllData()
-      .then((result) => {
-        setData(result);
+    Promise.all([
+      fetch("/api/clan"),
+      fetch("/api/members"),
+      fetch("/api/wars"),
+      fetch("/api/capital"),
+    ])
+      .then((responses) => Promise.all(responses.map((r) => r.json())))
+      .then(([clanData, membersData, warsData, capitalData]) => {
+        setMainData({
+          clan: clanData,
+          members: membersData.items || [],
+          currentWar: warsData.currentWar,
+          warLog: warsData.warLog?.items || [],
+          capitalSeasons: capitalData.items || [],
+        });
         setLastUpdated(new Date());
         setError(null);
       })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Error desconocido");
-      })
+      .catch((err) => setError(err.message))
       .finally(() => {
         setLoading(false);
         setRefreshing(false);
       });
   }, []);
 
+  const loadCWLData = useCallback(() => {
+    if (cwlLoaded) return;
+    setCwlLoading(true);
+
+    fetch("/api/cwl")
+      .then((r) => r.json())
+      .then((data) => {
+        setCwlData({
+          cwlGroup: data.group || null,
+          cwlWars: data.wars || [],
+          cwlAllWars: data.allWars || [],
+          notInCWL: data.notInCWL || false,
+        });
+        setCwlLoaded(true);
+      })
+      .catch(() => setCwlLoaded(true))
+      .finally(() => setCwlLoading(false));
+  }, [cwlLoaded]);
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
-    const interval = setInterval(() => loadData(), REFRESH_INTERVAL);
-    return () => clearInterval(interval);
-  }, [loadData]);
+    loadMainData();
+  }, [loadMainData]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeTab === "cwl") loadCWLData();
+  }, [activeTab, loadCWLData]);
 
   if (loading) {
     return (
@@ -173,26 +168,21 @@ export default function HomePage() {
                 ? `Actualizado: ${lastUpdated.toLocaleTimeString("es-ES")}`
                 : "Cargando..."}
             </Text>
-            <Group gap="xs">
-              <Badge color="yellow" variant="dot" size="sm">
-                Auto-refresh cada 60s
-              </Badge>
-              <Tooltip label="Actualizar ahora">
-                <ActionIcon
-                  variant="light"
-                  color="yellow"
-                  onClick={() => loadData(true)}
-                  loading={refreshing}
-                >
-                  <IconRefresh size={16} />
-                </ActionIcon>
-              </Tooltip>
-            </Group>
+            <Tooltip label="Actualizar ahora">
+              <ActionIcon
+                variant="light"
+                color="yellow"
+                onClick={() => loadMainData(true)}
+                loading={refreshing}
+              >
+                <IconRefresh size={16} />
+              </ActionIcon>
+            </Tooltip>
           </Group>
 
-          {data.clan && <ClanHeader clan={data.clan} />}
+          {mainData.clan && <ClanHeader clan={mainData.clan} />}
 
-          <Tabs defaultValue="members" mt="lg">
+          <Tabs value={activeTab} onChange={setActiveTab} mt="lg">
             <Tabs.List>
               <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
                 Miembros
@@ -209,45 +199,59 @@ export default function HomePage() {
               >
                 Capital
               </Tabs.Tab>
-              <Tabs.Tab value="alerts" leftSection={<IconBell size={16} />}>
-                Alertas
-              </Tabs.Tab>
               <Tabs.Tab value="cwl" leftSection={<IconShield size={16} />}>
                 Liga CWL
+              </Tabs.Tab>
+              <Tabs.Tab value="alerts" leftSection={<IconBell size={16} />}>
+                Alertas
               </Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="members" pt="md">
-              <MembersView members={data.members} />
+              <MembersView members={mainData.members} />
             </Tabs.Panel>
 
             <Tabs.Panel value="wars" pt="md">
-              <WarsView currentWar={data.currentWar} warLog={data.warLog} />
+              <WarsView
+                currentWar={mainData.currentWar}
+                warLog={mainData.warLog}
+              />
             </Tabs.Panel>
+
             <Tabs.Panel value="stats" pt="md">
               <StatsView
-                members={data.members}
-                warLog={data.warLog}
-                currentWar={data.currentWar}
+                members={mainData.members}
+                warLog={mainData.warLog}
+                currentWar={mainData.currentWar}
               />
             </Tabs.Panel>
+
             <Tabs.Panel value="capital" pt="md">
-              <CapitalView seasons={data.capitalSeasons} />
+              <CapitalView seasons={mainData.capitalSeasons} />
             </Tabs.Panel>
+
+            <Tabs.Panel value="cwl" pt="md">
+              {cwlLoading ? (
+                <Center py="xl">
+                  <Loader color="yellow" />
+                </Center>
+              ) : (
+                <CWLView
+                  group={cwlData.cwlGroup}
+                  wars={cwlData.cwlWars}
+                  allWars={cwlData.cwlAllWars}
+                  ourClanTag={mainData.clan?.tag || ""}
+                  notInCWL={cwlData.notInCWL}
+                />
+              )}
+            </Tabs.Panel>
+
             <Tabs.Panel value="alerts" pt="md">
               <AlertsView
-                members={data.members}
-                currentWar={data.currentWar}
-                capitalSeasons={data.capitalSeasons}
-              />
-            </Tabs.Panel>
-            <Tabs.Panel value="cwl" pt="md">
-              <CWLView
-                group={data.cwlGroup}
-                wars={data.cwlWars}
-                allWars={data.cwlAllWars}
-                ourClanTag={data.clan?.tag || ""}
-                notInCWL={data.notInCWL}
+                members={mainData.members}
+                currentWar={mainData.currentWar}
+                capitalSeasons={mainData.capitalSeasons}
+                ourClanTag={mainData.clan?.tag || ""}
               />
             </Tabs.Panel>
           </Tabs>

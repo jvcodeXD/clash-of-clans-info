@@ -14,6 +14,7 @@ import {
   Modal,
   SimpleGrid,
   Divider,
+  Button,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { useState } from "react";
@@ -268,6 +269,8 @@ function WarDetailModal({ entry, opened, onClose }: WarDetailModalProps) {
 export default function WarLogTable({ warLog }: WarLogTableProps) {
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedWar, setSelectedWar] = useState<WarLogEntry | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const displayed = showAll ? warLog : warLog.slice(0, 10);
 
   if (!warLog?.length) {
     return <Text c="dimmed">No hay historial de guerras disponible.</Text>;
@@ -343,7 +346,7 @@ export default function WarLogTable({ warLog }: WarLogTableProps) {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {warLog.map((entry, index) => (
+            {displayed.map((entry, index) => (
               <Table.Tr
                 key={index}
                 onClick={() => handleRowClick(entry)}
@@ -430,7 +433,18 @@ export default function WarLogTable({ warLog }: WarLogTableProps) {
           </Table.Tbody>
         </Table>
       </Paper>
-
+      {warLog.length > 10 && (
+        <Group justify="center" mt="md">
+          <Button
+            variant="light"
+            color="gray"
+            size="sm"
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll ? "Ver menos" : `Ver ${warLog.length - 10} guerras más`}
+          </Button>
+        </Group>
+      )}
       <WarDetailModal entry={selectedWar} opened={opened} onClose={close} />
     </Stack>
   );

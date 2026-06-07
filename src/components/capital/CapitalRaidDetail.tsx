@@ -13,6 +13,7 @@ import {
   ThemeIcon,
   Divider,
   ScrollArea,
+  Accordion,
 } from "@mantine/core";
 import { IconSword, IconShield, IconStar } from "@tabler/icons-react";
 import {
@@ -90,45 +91,75 @@ function DistrictRow({ district }: { district: CapitalRaidDistrict }) {
   );
 }
 
-function RaidLogEntry({
-  entry,
+function RaidLogAccordion({
+  entries,
   type,
 }: {
-  entry: CapitalRaidLogEntry;
+  entries: CapitalRaidLogEntry[];
   type: "attack" | "defense";
 }) {
-  const clan = type === "attack" ? entry.defender : entry.attacker;
   const isAttack = type === "attack";
 
   return (
-    <Paper p="md" radius="md" withBorder>
-      <Group justify="space-between" mb="sm">
-        <Group gap="sm">
-          <Avatar src={clan?.badgeUrls?.medium} size={36} radius="sm" />
-          <Stack gap={0}>
-            <Text size="sm" fw={700}>
-              {clan?.name ?? "Desconocido"}
-            </Text>
-            <Text size="xs" c="dimmed">
-              Nivel {clan?.level}
-            </Text>
-          </Stack>
-        </Group>
-        <Stack gap={2} align="flex-end">
-          <Badge color={isAttack ? "green" : "red"} variant="light">
-            {entry.districtsDestroyed}/{entry.districtCount} distritos
-          </Badge>
-          <Text size="xs" c="dimmed">
-            {entry.attackCount} ataques usados
-          </Text>
-        </Stack>
-      </Group>
-      <Stack gap="xs">
-        {entry.districts.map((d) => (
-          <DistrictRow key={d.id} district={d} />
-        ))}
-      </Stack>
-    </Paper>
+    <Accordion variant="separated" radius="md">
+      {entries.map((entry, i) => {
+        const clan = isAttack ? entry.defender : entry.attacker;
+        const totalLooted = entry.districts.reduce(
+          (s, d) => s + d.totalLooted,
+          0,
+        );
+
+        return (
+          <Accordion.Item key={i} value={`${type}-${i}`}>
+            <Accordion.Control>
+              <Group justify="space-between" pr="md">
+                <Group gap="sm">
+                  <Avatar src={clan?.badgeUrls?.medium} size={32} radius="sm" />
+                  <Stack gap={0}>
+                    <Text size="sm" fw={700}>
+                      {clan?.name ?? "Desconocido"}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Nivel {clan?.level}
+                    </Text>
+                  </Stack>
+                </Group>
+                <Group gap="xs">
+                  <Badge
+                    color={
+                      entry.districtsDestroyed === entry.districtCount
+                        ? "green"
+                        : entry.districtsDestroyed > 0
+                          ? "yellow"
+                          : "red"
+                    }
+                    variant="light"
+                    size="sm"
+                  >
+                    {entry.districtsDestroyed}/{entry.districtCount} distritos
+                  </Badge>
+                  {isAttack && (
+                    <Badge color="yellow" variant="light" size="sm">
+                      {totalLooted.toLocaleString()} oro
+                    </Badge>
+                  )}
+                  <Text size="xs" c="dimmed">
+                    {entry.attackCount} ataques
+                  </Text>
+                </Group>
+              </Group>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <Stack gap="xs">
+                {entry.districts.map((d) => (
+                  <DistrictRow key={d.id} district={d} />
+                ))}
+              </Stack>
+            </Accordion.Panel>
+          </Accordion.Item>
+        );
+      })}
+    </Accordion>
   );
 }
 
@@ -163,7 +194,6 @@ export default function CapitalRaidDetail({
           {formatDate(season.startTime)} → {formatDate(season.endTime)}
         </Text>
 
-        {/* Summary */}
         <SimpleGrid cols={{ base: 2, sm: 4 }}>
           <Paper p="sm" radius="md" withBorder>
             <Stack gap={0} align="center">
@@ -207,7 +237,6 @@ export default function CapitalRaidDetail({
           </Paper>
         </SimpleGrid>
 
-        {/* Members */}
         {season.members && season.members.length > 0 && (
           <Stack gap="xs">
             <Group gap="xs">
@@ -266,7 +295,6 @@ export default function CapitalRaidDetail({
 
         <Divider />
 
-        {/* Attack log */}
         {season.attackLog.length > 0 && (
           <Stack gap="xs">
             <Group gap="xs">
@@ -277,13 +305,10 @@ export default function CapitalRaidDetail({
                 Clanes atacados
               </Text>
             </Group>
-            {season.attackLog.map((entry, i) => (
-              <RaidLogEntry key={i} entry={entry} type="attack" />
-            ))}
+            <RaidLogAccordion entries={season.attackLog} type="attack" />
           </Stack>
         )}
 
-        {/* Defense log */}
         {season.defenseLog.length > 0 && (
           <Stack gap="xs">
             <Group gap="xs">
@@ -294,9 +319,7 @@ export default function CapitalRaidDetail({
                 Clanes que nos atacaron
               </Text>
             </Group>
-            {season.defenseLog.map((entry, i) => (
-              <RaidLogEntry key={i} entry={entry} type="defense" />
-            ))}
+            <RaidLogAccordion entries={season.defenseLog} type="defense" />
           </Stack>
         )}
       </Stack>

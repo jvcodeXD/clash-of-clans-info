@@ -87,7 +87,6 @@ export default function CWLView({
         <Tabs.Panel value="stats" pt="md">
           <CWLStats wars={wars} ourClanTag={ourClanTag} />
         </Tabs.Panel>
-
         <Tabs.Panel value="standings" pt="md">
           <CWLGroupStandings
             clans={group.clans}
@@ -95,25 +94,15 @@ export default function CWLView({
             ourClanTag={ourClanTag}
           />
         </Tabs.Panel>
-
         <Tabs.Panel value="rounds" pt="md">
-          <Stack gap="md">
-            {wars.map((war, i) => (
-              <CWLRoundCard
-                key={i}
-                war={war}
-                roundNumber={i + 1}
-                ourClanTag={ourClanTag}
-              />
-            ))}
-            {wars.length === 0 && (
-              <Text c="dimmed" ta="center">
-                No hay rondas disponibles aún.
-              </Text>
-            )}
-          </Stack>
+          {wars.length > 0 ? (
+            <CWLRoundCard wars={wars} ourClanTag={ourClanTag} />
+          ) : (
+            <Text c="dimmed" ta="center">
+              No hay rondas disponibles aún.
+            </Text>
+          )}
         </Tabs.Panel>
-
         <Tabs.Panel value="players" pt="md">
           <CWLPlayerStats wars={wars} ourClanTag={ourClanTag} />
         </Tabs.Panel>

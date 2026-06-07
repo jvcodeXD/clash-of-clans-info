@@ -39,19 +39,16 @@ export async function getWarLog() {
     headers,
     next: { revalidate: 60 },
   });
-  if (res.status === 403) return { items: [] }; // log privado
+  if (res.status === 403) return { items: [] };
   if (!res.ok) throw new Error("Error al obtener historial de guerras");
   return res.json();
 }
 
-export async function getCapitalRaids() {
+export async function getCurrentWarLeagueGroup() {
   const res = await fetch(
-    `${BASE_URL}/clans/${CLAN_TAG}/capitalraidseasons?limit=5`,
-    {
-      headers,
-      next: { revalidate: 60 },
-    },
+    `${BASE_URL}/clans/${CLAN_TAG}/currentwar/leaguegroup`,
+    { headers, next: { revalidate: 60 } },
   );
-  if (!res.ok) throw new Error("Error al obtener capital raids");
+  if (!res.ok) throw new Error("Error al obtener liga de guerra");
   return res.json();
 }

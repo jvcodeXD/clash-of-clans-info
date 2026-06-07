@@ -1,14 +1,13 @@
 "use client";
 
 import {
-  Paper,
+  Accordion,
   Group,
   Stack,
   Text,
   Badge,
   Avatar,
   SimpleGrid,
-  Progress,
   ThemeIcon,
   Table,
   Divider,
@@ -18,10 +17,11 @@ import { CWLWar, WarMember, Attack } from "@/types/clash";
 import AttackStars from "../wars/AttackStars";
 
 interface CWLRoundCardProps {
-  war: CWLWar;
-  roundNumber: number;
+  wars: CWLWar[];
   ourClanTag: string;
 }
+
+const normalize = (tag: string) => tag.replace("#", "").toUpperCase();
 
 function formatDate(time: string) {
   return new Date(
@@ -63,34 +63,30 @@ function getStateBadge(state: string) {
 
 function getResult(war: CWLWar, ourClanTag: string) {
   if (war.state !== "warEnded") return null;
-  const isMainClan = war.clan.tag === ourClanTag;
-  const ourStars = isMainClan ? war.clan.stars : war.opponent.stars;
-  const theirStars = isMainClan ? war.opponent.stars : war.clan.stars;
+  const isMain = normalize(war.clan.tag) === normalize(ourClanTag);
+  const ourStars = isMain ? war.clan.stars : war.opponent.stars;
+  const theirStars = isMain ? war.opponent.stars : war.clan.stars;
 
   if (ourStars > theirStars)
     return (
-      <Badge color="green" variant="filled">
+      <Badge color="green" variant="filled" size="sm">
         Victoria
       </Badge>
     );
   if (ourStars < theirStars)
     return (
-      <Badge color="red" variant="filled">
+      <Badge color="red" variant="filled" size="sm">
         Derrota
       </Badge>
     );
   return (
-    <Badge color="gray" variant="filled">
+    <Badge color="gray" variant="filled" size="sm">
       Empate
     </Badge>
   );
 }
 
-interface MemberRowProps {
-  member: WarMember;
-}
-
-function MemberRow({ member }: MemberRowProps) {
+function MemberRow({ member }: { member: WarMember }) {
   const attacks = member.attacks || [];
   const totalStars = attacks.reduce((s, a: Attack) => s + a.stars, 0);
   const avgDestruction = attacks.length
@@ -137,33 +133,16 @@ function MemberRow({ member }: MemberRowProps) {
       </Table.Td>
       <Table.Td>
         {attacks.length > 0 && (
-          <Group gap={4}>
-            <Text size="sm" fw={700} c="yellow">
-              ⭐ {totalStars}
-            </Text>
-          </Group>
+          <Text size="sm" fw={700} c="yellow">
+            ⭐ {totalStars}
+          </Text>
         )}
       </Table.Td>
       <Table.Td>
         {attacks.length > 0 && (
-          <Stack gap={2}>
-            <Progress
-              value={avgDestruction}
-              color={
-                avgDestruction >= 70
-                  ? "green"
-                  : avgDestruction >= 40
-                    ? "yellow"
-                    : "red"
-              }
-              size="sm"
-              radius="xl"
-              w={80}
-            />
-            <Text size="xs" c="dimmed">
-              {avgDestruction}%
-            </Text>
-          </Stack>
+          <Text size="xs" c="dimmed">
+            {avgDestruction}%
+          </Text>
         )}
       </Table.Td>
       <Table.Td>
@@ -184,122 +163,152 @@ function MemberRow({ member }: MemberRowProps) {
   );
 }
 
-export default function CWLRoundCard({
+function RoundContent({
   war,
-  roundNumber,
   ourClanTag,
-}: CWLRoundCardProps) {
-  const isMainClan = war.clan.tag === ourClanTag;
-  const ourClan = isMainClan ? war.clan : war.opponent;
-  const theirClan = isMainClan ? war.opponent : war.clan;
-
+}: {
+  war: CWLWar;
+  ourClanTag: string;
+}) {
+  const isMain = normalize(war.clan.tag) === normalize(ourClanTag);
+  const ourClan = isMain ? war.clan : war.opponent;
+  const theirClan = isMain ? war.opponent : war.clan;
   const sortedMembers = [...ourClan.members].sort(
     (a, b) => a.mapPosition - b.mapPosition,
   );
 
   return (
-    <Paper withBorder radius="md" p="md">
-      <Stack gap="md">
-        {/* Header */}
-        <Group justify="space-between">
-          <Group gap="xs">
-            <ThemeIcon color="blue" variant="light" size="sm">
-              <IconSword size={12} />
-            </ThemeIcon>
-            <Text fw={700} size="sm">
-              Ronda {roundNumber}
-            </Text>
-            {getStateBadge(war.state)}
-            {getResult(war, ourClanTag)}
-          </Group>
-          {war.endTime && (
-            <Group gap="xs">
-              <ThemeIcon color="gray" variant="light" size="xs">
-                <IconClock size={10} />
-              </ThemeIcon>
+    <Stack gap="md">
+      <SimpleGrid cols={3}>
+        <Stack align="center" gap="xs">
+          <Avatar src={ourClan.badgeUrls?.medium} size={48} radius="md" />
+          <Text fw={700} size="sm" ta="center">
+            {ourClan.name}
+          </Text>
+          <Badge color="yellow" variant="light" size="sm">
+            Tu clan
+          </Badge>
+        </Stack>
+
+        <Stack align="center" justify="center" gap={4}>
+          <SimpleGrid cols={2} spacing="xs">
+            <Stack align="center" gap={0}>
+              <Group gap={4}>
+                <IconStar size={14} color="#FFD700" fill="#FFD700" />
+                <Text fw={900} size="xl" c="yellow">
+                  {ourClan.stars}
+                </Text>
+              </Group>
               <Text size="xs" c="dimmed">
-                {formatDate(war.endTime)}
+                {ourClan.destructionPercentage?.toFixed(1)}%
               </Text>
-            </Group>
-          )}
-        </Group>
-
-        {/* VS */}
-        <SimpleGrid cols={3}>
-          <Stack align="center" gap="xs">
-            <Avatar src={ourClan.badgeUrls?.medium} size={48} radius="md" />
-            <Text fw={700} size="sm" ta="center">
-              {ourClan.name}
-            </Text>
-            <Badge color="yellow" variant="light">
-              Tu clan
-            </Badge>
-          </Stack>
-
-          <Stack align="center" justify="center" gap={4}>
-            <SimpleGrid cols={2} spacing="xs">
-              <Stack align="center" gap={0}>
-                <Group gap={4}>
-                  <IconStar size={14} color="#FFD700" fill="#FFD700" />
-                  <Text fw={900} size="xl" c="yellow">
-                    {ourClan.stars}
-                  </Text>
-                </Group>
-                <Text size="xs" c="dimmed">
-                  {ourClan.destructionPercentage?.toFixed(1)}%
+            </Stack>
+            <Stack align="center" gap={0}>
+              <Group gap={4}>
+                <IconStar size={14} color="#555" />
+                <Text fw={900} size="xl" c="dimmed">
+                  {theirClan.stars}
                 </Text>
-              </Stack>
-              <Stack align="center" gap={0}>
-                <Group gap={4}>
-                  <IconStar size={14} color="#555" />
-                  <Text fw={900} size="xl" c="dimmed">
-                    {theirClan.stars}
+              </Group>
+              <Text size="xs" c="dimmed">
+                {theirClan.destructionPercentage?.toFixed(1)}%
+              </Text>
+            </Stack>
+          </SimpleGrid>
+          <Text size="xs" c="dimmed">
+            {war.teamSize}v{war.teamSize}
+          </Text>
+        </Stack>
+
+        <Stack align="center" gap="xs">
+          <Avatar src={theirClan.badgeUrls?.medium} size={48} radius="md" />
+          <Text fw={700} size="sm" ta="center">
+            {theirClan.name}
+          </Text>
+          <Badge color="gray" variant="light" size="sm">
+            Rival
+          </Badge>
+        </Stack>
+      </SimpleGrid>
+
+      <Divider />
+
+      {war.state !== "preparation" && (
+        <Table verticalSpacing="xs" horizontalSpacing="sm">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>#</Table.Th>
+              <Table.Th>Jugador</Table.Th>
+              <Table.Th>Ataques</Table.Th>
+              <Table.Th>⭐</Table.Th>
+              <Table.Th>Destrucción</Table.Th>
+              <Table.Th>Mejor defensa</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {sortedMembers.map((member) => (
+              <MemberRow key={member.tag} member={member} />
+            ))}
+          </Table.Tbody>
+        </Table>
+      )}
+    </Stack>
+  );
+}
+
+export default function CWLRoundCard({ wars, ourClanTag }: CWLRoundCardProps) {
+  return (
+    <Accordion variant="separated" radius="md">
+      {wars.map((war, i) => {
+        const isMain = normalize(war.clan.tag) === normalize(ourClanTag);
+        const ourClan = isMain ? war.clan : war.opponent;
+        const theirClan = isMain ? war.opponent : war.clan;
+
+        return (
+          <Accordion.Item key={i} value={`round-${i}`}>
+            <Accordion.Control>
+              <Group justify="space-between" pr="md">
+                <Group gap="xs">
+                  <ThemeIcon color="blue" variant="light" size="sm">
+                    <IconSword size={12} />
+                  </ThemeIcon>
+                  <Text fw={700} size="sm">
+                    Ronda {i + 1}
                   </Text>
+                  {getStateBadge(war.state)}
+                  {getResult(war, ourClanTag)}
                 </Group>
-                <Text size="xs" c="dimmed">
-                  {theirClan.destructionPercentage?.toFixed(1)}%
-                </Text>
-              </Stack>
-            </SimpleGrid>
-            <Text size="xs" c="dimmed">
-              {war.teamSize}v{war.teamSize}
-            </Text>
-          </Stack>
-
-          <Stack align="center" gap="xs">
-            <Avatar src={theirClan.badgeUrls?.medium} size={48} radius="md" />
-            <Text fw={700} size="sm" ta="center">
-              {theirClan.name}
-            </Text>
-            <Badge color="gray" variant="light">
-              Rival
-            </Badge>
-          </Stack>
-        </SimpleGrid>
-
-        <Divider />
-
-        {/* Members table */}
-        {war.state !== "preparation" && (
-          <Table verticalSpacing="xs" horizontalSpacing="sm">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>#</Table.Th>
-                <Table.Th>Jugador</Table.Th>
-                <Table.Th>Ataques</Table.Th>
-                <Table.Th>⭐</Table.Th>
-                <Table.Th>Destrucción</Table.Th>
-                <Table.Th>Mejor defensa</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {sortedMembers.map((member) => (
-                <MemberRow key={member.tag} member={member} />
-              ))}
-            </Table.Tbody>
-          </Table>
-        )}
-      </Stack>
-    </Paper>
+                <Group gap="xs">
+                  <Avatar
+                    src={theirClan.badgeUrls?.medium}
+                    size={24}
+                    radius="sm"
+                  />
+                  <Text size="sm" c="dimmed">
+                    vs {theirClan.name}
+                  </Text>
+                  <Text size="sm" fw={700} c="yellow">
+                    ⭐ {ourClan.stars} - {theirClan.stars}
+                  </Text>
+                  {war.endTime && (
+                    <Group gap={4}>
+                      <ThemeIcon color="gray" variant="light" size="xs">
+                        <IconClock size={10} />
+                      </ThemeIcon>
+                      <Text size="xs" c="dimmed">
+                        {formatDate(war.endTime)}
+                      </Text>
+                    </Group>
+                  )}
+                </Group>
+              </Group>
+            </Accordion.Control>
+            <Accordion.Panel>
+              <RoundContent war={war} ourClanTag={ourClanTag} />
+            </Accordion.Panel>
+          </Accordion.Item>
+        );
+      })}
+    </Accordion>
   );
 }

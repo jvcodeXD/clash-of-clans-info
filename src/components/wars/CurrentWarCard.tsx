@@ -12,9 +12,11 @@ import {
   ThemeIcon,
   Divider,
   Table,
+  Card,
 } from "@mantine/core";
 import { IconClock, IconStar } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
 import WarMemberRow from "./WarMemberRow";
 import { CurrentWar, WarMember, Attack } from "@/types/clash";
 
@@ -60,13 +62,11 @@ function useCountdown(endTime: string) {
       );
       const diff = end.getTime() - Date.now();
       if (diff <= 0) return setTimeLeft("Finalizado");
-
       const h = Math.floor(diff / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
       setTimeLeft(`${h}h ${m}m ${s}s`);
     };
-
     calculate();
     const interval = setInterval(calculate, 1000);
     return () => clearInterval(interval);
@@ -114,10 +114,64 @@ function WarTeamStats({ team, label }: { team: WarMember[]; label: string }) {
   );
 }
 
+function MemberCard({ member }: { member: WarMember }) {
+  const attacks = member.attacks || [];
+  const totalStars = attacks.reduce((s, a: Attack) => s + a.stars, 0);
+  const avgDestruction = attacks.length
+    ? Math.round(
+        attacks.reduce((s, a: Attack) => s + a.destructionPercentage, 0) /
+          attacks.length,
+      )
+    : 0;
+
+  return (
+    <Card withBorder radius="md" p="sm">
+      <Group justify="space-between" mb={4}>
+        <Stack gap={0}>
+          <Text size="sm" fw={600}>
+            {member.name}
+          </Text>
+          <Group gap={4}>
+            <Badge variant="light" color="cyan" size="xs">
+              TH {member.townhallLevel}
+            </Badge>
+            <Text size="xs" c="dimmed">
+              #{member.mapPosition}
+            </Text>
+          </Group>
+        </Stack>
+        <Stack gap={2} align="flex-end">
+          {attacks.length > 0 ? (
+            <>
+              <Text size="sm" fw={700} c="yellow">
+                ⭐ {totalStars}
+              </Text>
+              <Text size="xs" c="dimmed">
+                {avgDestruction}% dest.
+              </Text>
+            </>
+          ) : (
+            <Badge color="red" variant="light" size="xs">
+              Sin ataque
+            </Badge>
+          )}
+        </Stack>
+      </Group>
+      {member.bestOpponentAttack && (
+        <Text size="xs" c="dimmed">
+          Mejor def. rival: {"⭐".repeat(member.bestOpponentAttack.stars)}{" "}
+          {member.bestOpponentAttack.destructionPercentage}%
+        </Text>
+      )}
+    </Card>
+  );
+}
+
 export default function CurrentWarCard({ war }: CurrentWarCardProps) {
   const endTime =
     war?.state === "preparation" ? war.startTime : (war?.endTime ?? "");
   const countdown = useCountdown(endTime);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   if (!war || war.state === "notInWar") {
     return (
@@ -135,7 +189,7 @@ export default function CurrentWarCard({ war }: CurrentWarCardProps) {
     <Stack gap="md">
       <Paper p="xl" radius="md" withBorder>
         <Stack gap="md">
-          <Group justify="space-between">
+          <Group justify="space-between" wrap="wrap">
             <Title order={3}>Guerra actual</Title>
             {getWarStateBadge(war.state)}
           </Group>
@@ -167,7 +221,7 @@ export default function CurrentWarCard({ war }: CurrentWarCardProps) {
             <WarTeamStats team={opponent.members} label={opponent.name} />
           </SimpleGrid>
 
-          <SimpleGrid cols={2}>
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <Paper p="md" radius="md" bg="dark.6" withBorder>
               <Group justify="space-between">
                 <Text fw={700}>{clan.name}</Text>
@@ -201,38 +255,48 @@ export default function CurrentWarCard({ war }: CurrentWarCardProps) {
         </Stack>
       </Paper>
 
-      <Paper withBorder radius="md">
-        <Table
-          striped
-          highlightOnHover
-          verticalSpacing="sm"
-          horizontalSpacing="md"
-        >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>#</Table.Th>
-              <Table.Th>Jugador</Table.Th>
-              <Table.Th>TH</Table.Th>
-              <Table.Th>Ataques</Table.Th>
-              <Table.Th>Detalle</Table.Th>
-              <Table.Th>Estrellas</Table.Th>
-              <Table.Th>Destrucción</Table.Th>
-              <Table.Th>Mejor defensa rival</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {[...clan.members]
-              .sort((a, b) => a.mapPosition - b.mapPosition)
-              .map((member) => (
-                <WarMemberRow
-                  key={member.tag}
-                  member={member}
-                  maxAttacks={war.attacksPerMember || 2}
-                />
-              ))}
-          </Table.Tbody>
-        </Table>
-      </Paper>
+      {isMobile ? (
+        <Stack gap="sm">
+          {[...clan.members]
+            .sort((a, b) => a.mapPosition - b.mapPosition)
+            .map((member) => (
+              <MemberCard key={member.tag} member={member} />
+            ))}
+        </Stack>
+      ) : (
+        <Paper withBorder radius="md">
+          <Table
+            striped
+            highlightOnHover
+            verticalSpacing="sm"
+            horizontalSpacing="md"
+          >
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>#</Table.Th>
+                <Table.Th>Jugador</Table.Th>
+                <Table.Th>TH</Table.Th>
+                <Table.Th>Ataques</Table.Th>
+                <Table.Th>Detalle</Table.Th>
+                <Table.Th>Estrellas</Table.Th>
+                <Table.Th>Destrucción</Table.Th>
+                <Table.Th>Mejor defensa rival</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {[...clan.members]
+                .sort((a, b) => a.mapPosition - b.mapPosition)
+                .map((member) => (
+                  <WarMemberRow
+                    key={member.tag}
+                    member={member}
+                    maxAttacks={war.attacksPerMember || 2}
+                  />
+                ))}
+            </Table.Tbody>
+          </Table>
+        </Paper>
+      )}
     </Stack>
   );
 }

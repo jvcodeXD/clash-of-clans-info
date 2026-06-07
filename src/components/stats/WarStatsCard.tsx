@@ -11,9 +11,20 @@ import {
   Progress,
   Stack,
   ThemeIcon,
+  Card,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconSword, IconStar } from "@tabler/icons-react";
-import { WarLogEntry, WarMember } from "@/types/clash";
+import { WarLogEntry, WarMember, Attack } from "@/types/clash";
+
+interface WarSummaryProps {
+  warLog: WarLogEntry[];
+}
+
+interface CurrentWarStarsProps {
+  members: WarMember[];
+  attacksPerMember: number;
+}
 
 interface WarStatsCardProps {
   warLog: WarLogEntry[];
@@ -24,16 +35,13 @@ interface WarStatsCardProps {
   } | null;
 }
 
-interface WarSummaryProps {
-  warLog: WarLogEntry[];
-}
+const medals = ["🥇", "🥈", "🥉"];
 
 function WarSummaryTable({ warLog }: WarSummaryProps) {
   const wins = warLog.filter((w) => w.result === "win").length;
   const losses = warLog.filter((w) => w.result === "lose").length;
   const draws = warLog.filter((w) => w.result === "tie").length;
   const total = warLog.length;
-
   const totalStars = warLog.reduce((s, w) => s + w.clan.stars, 0);
   const totalOpponentStars = warLog.reduce((s, w) => s + w.opponent.stars, 0);
   const avgDestruction =
@@ -52,8 +60,8 @@ function WarSummaryTable({ warLog }: WarSummaryProps) {
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
   return (
-    <Stack gap="md">
-      <Group gap="xl">
+    <Stack gap="xs">
+      <Group gap="xl" wrap="wrap">
         <Stack gap={0} align="center">
           <Text size="xl" fw={900} c="green">
             {wins}
@@ -83,7 +91,7 @@ function WarSummaryTable({ warLog }: WarSummaryProps) {
             {totalStars}
           </Text>
           <Text size="xs" c="dimmed">
-            Estrellas totales
+            Estrellas
           </Text>
         </Stack>
         <Stack gap={0} align="center">
@@ -91,7 +99,7 @@ function WarSummaryTable({ warLog }: WarSummaryProps) {
             {avgDestruction}%
           </Text>
           <Text size="xs" c="dimmed">
-            Destrucción prom.
+            Dest. prom.
           </Text>
         </Stack>
       </Group>
@@ -113,7 +121,7 @@ function WarSummaryTable({ warLog }: WarSummaryProps) {
 
       <Stack gap={4}>
         <Group justify="space-between">
-          <Text size="xs">Nuestras estrellas vs rivales</Text>
+          <Text size="xs">Nuestras ⭐ vs rivales</Text>
           <Text size="xs" c="dimmed">
             {totalStars} vs {totalOpponentStars}
           </Text>
@@ -143,28 +151,71 @@ function WarSummaryTable({ warLog }: WarSummaryProps) {
   );
 }
 
-interface CurrentWarStarsProps {
-  members: WarMember[];
-  attacksPerMember: number;
-}
-
 function CurrentWarStars({ members, attacksPerMember }: CurrentWarStarsProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   const sorted = [...members]
     .map((m) => ({
       ...m,
-      totalStars: (m.attacks || []).reduce((s, a) => s + a.stars, 0),
+      totalStars: (m.attacks || []).reduce((s, a: Attack) => s + a.stars, 0),
       totalAttacks: m.attacks?.length || 0,
       avgDestruction: m.attacks?.length
         ? Math.round(
-            (m.attacks || []).reduce((s, a) => s + a.destructionPercentage, 0) /
-              m.attacks.length,
+            (m.attacks || []).reduce(
+              (s, a: Attack) => s + a.destructionPercentage,
+              0,
+            ) / m.attacks.length,
           )
         : 0,
     }))
     .sort((a, b) => b.totalStars - a.totalStars);
 
   const maxStars = attacksPerMember * 3;
-  const medals = ["🥇", "🥈", "🥉"];
+
+  if (isMobile) {
+    return (
+      <Stack gap="sm">
+        {sorted.map((m, i) => (
+          <Card key={m.tag} withBorder radius="md" p="sm">
+            <Group justify="space-between">
+              <Group gap="sm">
+                <Text size="sm">{medals[i] ?? `#${i + 1}`}</Text>
+                <Avatar color="yellow" radius="xl" size="sm">
+                  {m.name.charAt(0)}
+                </Avatar>
+                <Stack gap={2}>
+                  <Text size="sm" fw={600}>
+                    {m.name}
+                  </Text>
+                  <Badge variant="light" color="cyan" size="xs">
+                    TH {m.townhallLevel}
+                  </Badge>
+                </Stack>
+              </Group>
+              <Stack gap={2} align="flex-end">
+                <Text size="sm" fw={700} c="yellow">
+                  ⭐ {m.totalStars}/{maxStars}
+                </Text>
+                <Badge
+                  color={
+                    m.totalAttacks === attacksPerMember
+                      ? "green"
+                      : m.totalAttacks > 0
+                        ? "yellow"
+                        : "red"
+                  }
+                  variant="light"
+                  size="xs"
+                >
+                  {m.totalAttacks}/{attacksPerMember} ataques
+                </Badge>
+              </Stack>
+            </Group>
+          </Card>
+        ))}
+      </Stack>
+    );
+  }
 
   return (
     <Table verticalSpacing="sm">

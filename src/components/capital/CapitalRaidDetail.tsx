@@ -112,8 +112,8 @@ function RaidLogAccordion({
         return (
           <Accordion.Item key={i} value={`${type}-${i}`}>
             <Accordion.Control>
-              <Group justify="space-between" pr="md">
-                <Group gap="sm">
+              <Stack gap={4}>
+                <Group gap="sm" wrap="nowrap">
                   <Avatar src={clan?.badgeUrls?.medium} size={32} radius="sm" />
                   <Stack gap={0}>
                     <Text size="sm" fw={700}>
@@ -124,7 +124,7 @@ function RaidLogAccordion({
                     </Text>
                   </Stack>
                 </Group>
-                <Group gap="xs">
+                <Group gap="xs" wrap="wrap">
                   <Badge
                     color={
                       entry.districtsDestroyed === entry.districtCount
@@ -147,7 +147,7 @@ function RaidLogAccordion({
                     {entry.attackCount} ataques
                   </Text>
                 </Group>
-              </Group>
+              </Stack>
             </Accordion.Control>
             <Accordion.Panel>
               <Stack gap="xs">
@@ -238,59 +238,104 @@ export default function CapitalRaidDetail({
         </SimpleGrid>
 
         {season.members && season.members.length > 0 && (
-          <Stack gap="xs">
-            <Group gap="xs">
-              <ThemeIcon color="yellow" variant="light" size="sm">
-                <IconStar size={12} />
-              </ThemeIcon>
-              <Text fw={600} size="sm">
-                Participantes
-              </Text>
-            </Group>
-            {[...season.members]
-              .sort(
-                (a, b) => b.capitalResourcesLooted - a.capitalResourcesLooted,
-              )
-              .map((m, i) => (
-                <Paper key={m.tag} p="sm" radius="md" withBorder>
-                  <Group justify="space-between">
-                    <Group gap="xs">
-                      <Text size="sm" c="dimmed">
-                        #{i + 1}
-                      </Text>
-                      <Avatar color="yellow" radius="xl" size="sm">
-                        {m.name.charAt(0)}
-                      </Avatar>
-                      <Text size="sm" fw={600}>
-                        {m.name}
-                      </Text>
-                    </Group>
-                    <Group gap="md">
-                      <Stack gap={0} align="center">
-                        <Text size="sm" fw={700} c="yellow">
-                          {m.capitalResourcesLooted.toLocaleString()}
-                        </Text>
-                        <Text size="xs" c="dimmed">
-                          oro
-                        </Text>
-                      </Stack>
-                      <Badge
-                        color={
-                          m.attacks >= m.attackLimit
-                            ? "green"
-                            : m.attacks > 0
-                              ? "yellow"
-                              : "red"
-                        }
-                        variant="light"
-                      >
-                        {m.attacks}/{m.attackLimit + m.bonusAttackLimit} ataques
-                      </Badge>
-                    </Group>
-                  </Group>
-                </Paper>
-              ))}
-          </Stack>
+          <Accordion variant="separated" radius="md">
+            <Accordion.Item value="members">
+              <Accordion.Control>
+                <Group gap="xs">
+                  <ThemeIcon color="yellow" variant="light" size="sm">
+                    <IconStar size={12} />
+                  </ThemeIcon>
+                  <Text fw={600} size="sm">
+                    Participantes
+                  </Text>
+                  <Badge color="yellow" variant="light" size="sm">
+                    {season.members.length} jugadores
+                  </Badge>
+                </Group>
+              </Accordion.Control>
+              <Accordion.Panel>
+                <Stack gap="xs">
+                  {[...season.members]
+                    .sort(
+                      (a, b) =>
+                        b.capitalResourcesLooted - a.capitalResourcesLooted,
+                    )
+                    .map((m, i) => (
+                      <Paper key={m.tag} p="sm" radius="md" withBorder>
+                        <Group
+                          justify="space-between"
+                          wrap="nowrap"
+                          align="center"
+                        >
+                          <Group
+                            gap="xs"
+                            wrap="nowrap"
+                            style={{ minWidth: 0, flex: 1 }}
+                          >
+                            <Text
+                              size="sm"
+                              c="dimmed"
+                              style={{ flexShrink: 0 }}
+                            >
+                              #{i + 1}
+                            </Text>
+                            <Avatar
+                              color="yellow"
+                              radius="xl"
+                              size="sm"
+                              style={{ flexShrink: 0 }}
+                            >
+                              {m.name.charAt(0)}
+                            </Avatar>
+                            <Text
+                              size="sm"
+                              fw={600}
+                              lineClamp={1}
+                              style={{ minWidth: 0 }}
+                            >
+                              {m.name}
+                            </Text>
+                          </Group>
+                          <Group
+                            gap="sm"
+                            wrap="nowrap"
+                            style={{ flexShrink: 0, marginLeft: 8 }}
+                          >
+                            <Stack gap={0} align="center">
+                              <Text
+                                size="sm"
+                                fw={700}
+                                c="yellow"
+                                style={{ whiteSpace: "nowrap" }}
+                              >
+                                {m.capitalResourcesLooted.toLocaleString()}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                oro
+                              </Text>
+                            </Stack>
+                            <Badge
+                              color={
+                                m.attacks >= m.attackLimit
+                                  ? "green"
+                                  : m.attacks > 0
+                                    ? "yellow"
+                                    : "red"
+                              }
+                              variant="light"
+                              size="sm"
+                              style={{ whiteSpace: "nowrap" }}
+                            >
+                              {m.attacks}/{m.attackLimit + m.bonusAttackLimit}
+                            </Badge>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    ))}
+                </Stack>
+              </Accordion.Panel>
+            </Accordion.Item>
+          </Accordion>
         )}
 
         <Divider />

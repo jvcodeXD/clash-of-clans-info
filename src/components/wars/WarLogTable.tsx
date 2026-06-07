@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Paper,
   Table,
@@ -14,10 +15,9 @@ import {
   Modal,
   SimpleGrid,
   Divider,
-  Button,
+  Card,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
-import { useState } from "react";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
   IconTrophy,
   IconX,
@@ -102,7 +102,6 @@ function WarDetailModal({ entry, opened, onClose }: WarDetailModalProps) {
           {formatDate(entry.endTime)} · {entry.teamSize}v{entry.teamSize}
         </Text>
 
-        {/* VS Card */}
         <SimpleGrid cols={3}>
           <Stack align="center" gap="xs">
             <Avatar src={entry.clan.badgeUrls?.medium} size={60} radius="md" />
@@ -143,7 +142,6 @@ function WarDetailModal({ entry, opened, onClose }: WarDetailModalProps) {
 
         <Divider />
 
-        {/* Stats comparison */}
         <SimpleGrid cols={2}>
           <Paper p="md" radius="md" withBorder>
             <Stack gap="xs">
@@ -270,7 +268,7 @@ export default function WarLogTable({ warLog }: WarLogTableProps) {
   const [opened, { open, close }] = useDisclosure(false);
   const [selectedWar, setSelectedWar] = useState<WarLogEntry | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const displayed = showAll ? warLog : warLog.slice(0, 10);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   if (!warLog?.length) {
     return <Text c="dimmed">No hay historial de guerras disponible.</Text>;
@@ -280,8 +278,9 @@ export default function WarLogTable({ warLog }: WarLogTableProps) {
   const losses = warLog.filter((w) => w.result === "lose").length;
   const draws = warLog.filter((w) => w.result === "tie").length;
   const winRate = Math.round((wins / warLog.length) * 100);
+  const displayed = showAll ? warLog : warLog.slice(0, 10);
 
-  function handleRowClick(entry: WarLogEntry) {
+  function handleClick(entry: WarLogEntry) {
     setSelectedWar(entry);
     open();
   }
@@ -326,125 +325,179 @@ export default function WarLogTable({ warLog }: WarLogTableProps) {
         </Stack>
       </Paper>
 
-      <Paper withBorder radius="md">
-        <Table
-          striped
-          highlightOnHover
-          verticalSpacing="sm"
-          horizontalSpacing="md"
-        >
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Fecha</Table.Th>
-              <Table.Th>Rival</Table.Th>
-              <Table.Th>Tamaño</Table.Th>
-              <Table.Th>Resultado</Table.Th>
-              <Table.Th>Nuestras ⭐</Table.Th>
-              <Table.Th>Sus ⭐</Table.Th>
-              <Table.Th>Nuestra dest.</Table.Th>
-              <Table.Th>Su dest.</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {displayed.map((entry, index) => (
-              <Table.Tr
-                key={index}
-                onClick={() => handleRowClick(entry)}
-                style={{ cursor: "pointer" }}
-              >
-                <Table.Td>
-                  <Text size="sm" c="dimmed">
-                    {formatDate(entry.endTime)}
+      {isMobile ? (
+        <Stack gap="sm">
+          {displayed.map((entry, index) => (
+            <Card
+              key={index}
+              withBorder
+              radius="md"
+              p="sm"
+              onClick={() => handleClick(entry)}
+              style={{ cursor: "pointer" }}
+            >
+              <Group justify="space-between" mb={6}>
+                <Group gap="xs">
+                  <Avatar
+                    src={entry.opponent.badgeUrls?.medium}
+                    size={32}
+                    radius="sm"
+                  />
+                  <Stack gap={0}>
+                    <Text size="sm" fw={600}>
+                      {entry.opponent.name}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      Nv {entry.opponent.clanLevel} · {entry.teamSize}v
+                      {entry.teamSize}
+                    </Text>
+                  </Stack>
+                </Group>
+                {getResultBadge(entry.result)}
+              </Group>
+              <Group justify="space-between">
+                <Text size="xs" c="dimmed">
+                  {formatDate(entry.endTime)}
+                </Text>
+                <Group gap="xs">
+                  <Text size="sm" fw={700} c="yellow">
+                    ⭐ {entry.clan.stars}
                   </Text>
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="sm">
-                    <Avatar
-                      src={entry.opponent.badgeUrls?.medium}
-                      size={28}
-                      radius="sm"
-                    />
-                    <Stack gap={0}>
+                  <Text size="xs" c="dimmed">
+                    vs
+                  </Text>
+                  <Text size="sm" fw={700} c="dimmed">
+                    ⭐ {entry.opponent.stars}
+                  </Text>
+                </Group>
+              </Group>
+            </Card>
+          ))}
+        </Stack>
+      ) : (
+        <Paper withBorder radius="md">
+          <Table
+            striped
+            highlightOnHover
+            verticalSpacing="sm"
+            horizontalSpacing="md"
+          >
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Fecha</Table.Th>
+                <Table.Th>Rival</Table.Th>
+                <Table.Th>Tamaño</Table.Th>
+                <Table.Th>Resultado</Table.Th>
+                <Table.Th>Nuestras ⭐</Table.Th>
+                <Table.Th>Sus ⭐</Table.Th>
+                <Table.Th>Nuestra dest.</Table.Th>
+                <Table.Th>Su dest.</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {displayed.map((entry, index) => (
+                <Table.Tr
+                  key={index}
+                  onClick={() => handleClick(entry)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Table.Td>
+                    <Text size="sm" c="dimmed">
+                      {formatDate(entry.endTime)}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="sm">
+                      <Avatar
+                        src={entry.opponent.badgeUrls?.medium}
+                        size={28}
+                        radius="sm"
+                      />
+                      <Stack gap={0}>
+                        <Text size="sm" fw={600}>
+                          {entry.opponent.name}
+                        </Text>
+                        <Text size="xs" c="dimmed">
+                          Nivel {entry.opponent.clanLevel}
+                        </Text>
+                      </Stack>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Badge variant="light" color="blue">
+                      {entry.teamSize}v{entry.teamSize}
+                    </Badge>
+                  </Table.Td>
+                  <Table.Td>{getResultBadge(entry.result)}</Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <AttackStars
+                        stars={Math.min(entry.clan.stars, 3)}
+                        max={3}
+                      />
                       <Text size="sm" fw={600}>
-                        {entry.opponent.name}
+                        {entry.clan.stars}
                       </Text>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Group gap="xs">
+                      <AttackStars
+                        stars={Math.min(entry.opponent.stars, 3)}
+                        max={3}
+                      />
+                      <Text size="sm" fw={600}>
+                        {entry.opponent.stars}
+                      </Text>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack gap={2}>
+                      <Progress
+                        value={entry.clan.destructionPercentage}
+                        color="green"
+                        size="sm"
+                        radius="xl"
+                      />
                       <Text size="xs" c="dimmed">
-                        Nivel {entry.opponent.clanLevel}
+                        {entry.clan.destructionPercentage?.toFixed(1)}%
                       </Text>
                     </Stack>
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  <Badge variant="light" color="blue">
-                    {entry.teamSize}v{entry.teamSize}
-                  </Badge>
-                </Table.Td>
-                <Table.Td>{getResultBadge(entry.result)}</Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <AttackStars
-                      stars={Math.min(entry.clan.stars, 3)}
-                      max={3}
-                    />
-                    <Text size="sm" fw={600}>
-                      {entry.clan.stars}
-                    </Text>
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs">
-                    <AttackStars
-                      stars={Math.min(entry.opponent.stars, 3)}
-                      max={3}
-                    />
-                    <Text size="sm" fw={600}>
-                      {entry.opponent.stars}
-                    </Text>
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  <Stack gap={2}>
-                    <Progress
-                      value={entry.clan.destructionPercentage}
-                      color="green"
-                      size="sm"
-                      radius="xl"
-                    />
-                    <Text size="xs" c="dimmed">
-                      {entry.clan.destructionPercentage?.toFixed(1)}%
-                    </Text>
-                  </Stack>
-                </Table.Td>
-                <Table.Td>
-                  <Stack gap={2}>
-                    <Progress
-                      value={entry.opponent.destructionPercentage}
-                      color="red"
-                      size="sm"
-                      radius="xl"
-                    />
-                    <Text size="xs" c="dimmed">
-                      {entry.opponent.destructionPercentage?.toFixed(1)}%
-                    </Text>
-                  </Stack>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      </Paper>
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack gap={2}>
+                      <Progress
+                        value={entry.opponent.destructionPercentage}
+                        color="red"
+                        size="sm"
+                        radius="xl"
+                      />
+                      <Text size="xs" c="dimmed">
+                        {entry.opponent.destructionPercentage?.toFixed(1)}%
+                      </Text>
+                    </Stack>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Paper>
+      )}
+
       {warLog.length > 10 && (
-        <Group justify="center" mt="md">
-          <Button
-            variant="light"
+        <Group justify="center">
+          <Badge
+            style={{ cursor: "pointer" }}
             color="gray"
-            size="sm"
+            variant="light"
+            size="lg"
             onClick={() => setShowAll(!showAll)}
           >
             {showAll ? "Ver menos" : `Ver ${warLog.length - 10} guerras más`}
-          </Button>
+          </Badge>
         </Group>
       )}
+
       <WarDetailModal entry={selectedWar} opened={opened} onClose={close} />
     </Stack>
   );

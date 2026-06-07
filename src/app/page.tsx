@@ -12,7 +12,9 @@ import {
   Group,
   ActionIcon,
   Tooltip,
+  Select,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconUsers,
   IconSword,
@@ -55,7 +57,17 @@ interface CWLData {
   notInCWL: boolean;
 }
 
+const tabOptions = [
+  { value: "members", label: "👥 Miembros" },
+  { value: "wars", label: "⚔️ Guerras" },
+  { value: "stats", label: "📊 Estadísticas" },
+  { value: "capital", label: "🏰 Capital" },
+  { value: "cwl", label: "🛡️ Liga CWL" },
+  { value: "alerts", label: "🔔 Alertas" },
+];
+
 export default function HomePage() {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [mainData, setMainData] = useState<MainData>({
     clan: null,
     members: [],
@@ -182,41 +194,52 @@ export default function HomePage() {
           {mainData.clan && <ClanHeader clan={mainData.clan} />}
 
           <Tabs value={activeTab} onChange={setActiveTab} mt="lg">
-            <Tabs.List>
-              <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
-                Miembros
-              </Tabs.Tab>
-              <Tabs.Tab value="wars" leftSection={<IconSword size={16} />}>
-                Guerras
-              </Tabs.Tab>
-              <Tabs.Tab value="stats" leftSection={<IconChartBar size={16} />}>
-                Estadísticas
-              </Tabs.Tab>
-              <Tabs.Tab
-                value="capital"
-                leftSection={<IconBuildingCastle size={16} />}
-              >
-                Capital
-              </Tabs.Tab>
-              <Tabs.Tab value="cwl" leftSection={<IconShield size={16} />}>
-                Liga CWL
-              </Tabs.Tab>
-              <Tabs.Tab value="alerts" leftSection={<IconBell size={16} />}>
-                Alertas
-              </Tabs.Tab>
-            </Tabs.List>
+            {isMobile ? (
+              <Select
+                data={tabOptions}
+                value={activeTab}
+                onChange={setActiveTab}
+                mb="md"
+                size="sm"
+              />
+            ) : (
+              <Tabs.List>
+                <Tabs.Tab value="members" leftSection={<IconUsers size={16} />}>
+                  Miembros
+                </Tabs.Tab>
+                <Tabs.Tab value="wars" leftSection={<IconSword size={16} />}>
+                  Guerras
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="stats"
+                  leftSection={<IconChartBar size={16} />}
+                >
+                  Estadísticas
+                </Tabs.Tab>
+                <Tabs.Tab
+                  value="capital"
+                  leftSection={<IconBuildingCastle size={16} />}
+                >
+                  Capital
+                </Tabs.Tab>
+                <Tabs.Tab value="cwl" leftSection={<IconShield size={16} />}>
+                  Liga CWL
+                </Tabs.Tab>
+                <Tabs.Tab value="alerts" leftSection={<IconBell size={16} />}>
+                  Alertas
+                </Tabs.Tab>
+              </Tabs.List>
+            )}
 
             <Tabs.Panel value="members" pt="md">
               <MembersView members={mainData.members} />
             </Tabs.Panel>
-
             <Tabs.Panel value="wars" pt="md">
               <WarsView
                 currentWar={mainData.currentWar}
                 warLog={mainData.warLog}
               />
             </Tabs.Panel>
-
             <Tabs.Panel value="stats" pt="md">
               <StatsView
                 members={mainData.members}
@@ -224,11 +247,9 @@ export default function HomePage() {
                 currentWar={mainData.currentWar}
               />
             </Tabs.Panel>
-
             <Tabs.Panel value="capital" pt="md">
               <CapitalView seasons={mainData.capitalSeasons} />
             </Tabs.Panel>
-
             <Tabs.Panel value="cwl" pt="md">
               {cwlLoading ? (
                 <Center py="xl">
@@ -244,7 +265,6 @@ export default function HomePage() {
                 />
               )}
             </Tabs.Panel>
-
             <Tabs.Panel value="alerts" pt="md">
               <AlertsView
                 members={mainData.members}

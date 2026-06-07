@@ -9,7 +9,9 @@ import {
   Group,
   ThemeIcon,
   Badge,
+  Select,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconTrophy,
   IconSword,
@@ -25,18 +27,27 @@ import CWLStats from "./CWLStats";
 interface CWLViewProps {
   group: CWLGroup | null;
   wars: CWLWar[];
+  allWars: CWLWar[];
   ourClanTag: string;
   notInCWL?: boolean;
-  allWars: CWLWar[];
 }
+
+const cwlTabOptions = [
+  { value: "standings", label: "🏆 Clasificación" },
+  { value: "rounds", label: "⚔️ Rondas" },
+  { value: "players", label: "⭐ Jugadores" },
+  { value: "stats", label: "📊 Estadísticas" },
+];
 
 export default function CWLView({
   group,
   wars,
-  ourClanTag,
   allWars,
+  ourClanTag,
   notInCWL,
 }: CWLViewProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   if (notInCWL || !group) {
     return (
       <Paper p="xl" radius="md" withBorder>
@@ -57,7 +68,7 @@ export default function CWLView({
 
   return (
     <Stack gap="md">
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <Title order={3}>Liga de Guerra de Clanes</Title>
         <Group gap="xs">
           <Badge color="blue" variant="light">
@@ -70,23 +81,30 @@ export default function CWLView({
       </Group>
 
       <Tabs defaultValue="standings">
-        <Tabs.List>
-          <Tabs.Tab value="standings" leftSection={<IconTrophy size={16} />}>
-            Clasificación
-          </Tabs.Tab>
-          <Tabs.Tab value="rounds" leftSection={<IconSword size={16} />}>
-            Rondas
-          </Tabs.Tab>
-          <Tabs.Tab value="players" leftSection={<IconStar size={16} />}>
-            Jugadores
-          </Tabs.Tab>
-          <Tabs.Tab value="stats" leftSection={<IconChartBar size={16} />}>
-            Estadísticas
-          </Tabs.Tab>
-        </Tabs.List>
-        <Tabs.Panel value="stats" pt="md">
-          <CWLStats wars={wars} ourClanTag={ourClanTag} />
-        </Tabs.Panel>
+        {isMobile ? (
+          <Select
+            data={cwlTabOptions}
+            defaultValue="standings"
+            mb="md"
+            size="sm"
+          />
+        ) : (
+          <Tabs.List>
+            <Tabs.Tab value="standings" leftSection={<IconTrophy size={16} />}>
+              Clasificación
+            </Tabs.Tab>
+            <Tabs.Tab value="rounds" leftSection={<IconSword size={16} />}>
+              Rondas
+            </Tabs.Tab>
+            <Tabs.Tab value="players" leftSection={<IconStar size={16} />}>
+              Jugadores
+            </Tabs.Tab>
+            <Tabs.Tab value="stats" leftSection={<IconChartBar size={16} />}>
+              Estadísticas
+            </Tabs.Tab>
+          </Tabs.List>
+        )}
+
         <Tabs.Panel value="standings" pt="md">
           <CWLGroupStandings
             clans={group.clans}
@@ -105,6 +123,9 @@ export default function CWLView({
         </Tabs.Panel>
         <Tabs.Panel value="players" pt="md">
           <CWLPlayerStats wars={wars} ourClanTag={ourClanTag} />
+        </Tabs.Panel>
+        <Tabs.Panel value="stats" pt="md">
+          <CWLStats wars={wars} ourClanTag={ourClanTag} />
         </Tabs.Panel>
       </Tabs>
     </Stack>

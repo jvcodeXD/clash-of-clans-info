@@ -17,7 +17,9 @@ export default function WarsView({ currentWar, warLog }: WarsViewProps) {
       <Title order={3}>Guerras</Title>
 
       <Tabs defaultValue="current">
-        <Tabs.List>
+        <Tabs.List
+          style={{ overflowX: "auto", flexWrap: "nowrap", paddingBottom: 2 }}
+        >
           <Tabs.Tab value="current" leftSection={<IconSword size={16} />}>
             Guerra actual
           </Tabs.Tab>

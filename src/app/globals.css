@@ -1,0 +1,7 @@
+.mantine-Tabs-list::-webkit-scrollbar {
+  display: none;
+}
+.mantine-Tabs-list {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

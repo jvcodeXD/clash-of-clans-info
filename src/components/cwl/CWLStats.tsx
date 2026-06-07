@@ -12,7 +12,9 @@ import {
   Table,
   Avatar,
   Accordion,
+  Card,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconTrophy,
   IconStar,
@@ -56,6 +58,7 @@ interface PlayerStat {
 }
 
 const normalize = (tag: string) => tag.replace("#", "").toUpperCase();
+const medals = ["🥇", "🥈", "🥉"];
 
 function computeRoundStats(wars: CWLWar[], ourClanTag: string): RoundStat[] {
   const our = normalize(ourClanTag);
@@ -115,9 +118,8 @@ function computePlayerStats(wars: CWLWar[], ourClanTag: string): PlayerStat[] {
       const stats = statsMap.get(member.tag)!;
       const attacks = member.attacks || [];
 
-      if (war.state === "warEnded" && attacks.length === 0) {
+      if (war.state === "warEnded" && attacks.length === 0)
         stats.missedAttacks++;
-      }
 
       attacks.forEach((a: Attack) => {
         stats.totalStars += a.stars;
@@ -158,9 +160,8 @@ function getScoreLabel(score: number) {
   return "Bajo";
 }
 
-const medals = ["🥇", "🥈", "🥉"];
-
 export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const finishedWars = wars.filter((w) => w.state === "warEnded");
 
   if (!finishedWars.length) {
@@ -191,7 +192,6 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
   const mostMissed = [...players].sort(
     (a, b) => b.missedAttacks - a.missedAttacks,
   )[0];
-
   const repeatOffenders = players.filter((p) => p.missedAttacks >= 2);
   const missedOnce = players.filter((p) => p.missedAttacks === 1);
   const zeroAttacks = players.filter((p) => p.totalAttacks === 0);
@@ -202,7 +202,7 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
 
   return (
     <Stack gap="md">
-      {/* Summary cards — always visible */}
+      {/* Summary cards */}
       <SimpleGrid cols={{ base: 2, sm: 4 }}>
         <Paper withBorder radius="md" p="md">
           <Stack gap={0} align="center">
@@ -226,13 +226,13 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
               ⭐ {totalStars}
             </Text>
             <Text size="xs" c="dimmed">
-              Estrellas totales
+              Estrellas
             </Text>
             <Text size="lg" fw={700} c="blue">
               {avgDestruction}%
             </Text>
             <Text size="xs" c="dimmed">
-              Destrucción promedio
+              Dest. prom.
             </Text>
           </Stack>
         </Paper>
@@ -245,11 +245,11 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
               <Text size="xs" c="dimmed">
                 MVP
               </Text>
-              <Text size="sm" fw={700}>
+              <Text size="sm" fw={700} ta="center">
                 {topPlayer.name}
               </Text>
               <Text size="xs" c="yellow">
-                ⭐ {topPlayer.totalStars} estrellas
+                ⭐ {topPlayer.totalStars}
               </Text>
             </Stack>
           </Paper>
@@ -263,18 +263,17 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
               <Text size="xs" c="dimmed">
                 Más eficiente
               </Text>
-              <Text size="sm" fw={700}>
+              <Text size="sm" fw={700} ta="center">
                 {bestEfficiency.name}
               </Text>
               <Text size="xs" c="green">
-                {bestEfficiency.efficiency}% eficiencia
+                {bestEfficiency.efficiency}%
               </Text>
             </Stack>
           </Paper>
         )}
       </SimpleGrid>
 
-      {/* Accordion sections */}
       <Accordion variant="separated" radius="md" multiple>
         {/* Rendimiento por ronda */}
         <Accordion.Item value="rounds">
@@ -295,7 +294,7 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
             <Stack gap="md">
               {rounds.map((r) => (
                 <Stack key={r.round} gap="xs">
-                  <Group justify="space-between">
+                  <Group justify="space-between" wrap="wrap">
                     <Group gap="xs">
                       <Text size="sm" fw={600}>
                         Ronda {r.round}
@@ -353,10 +352,10 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
                   </Progress.Root>
                   <Group justify="space-between">
                     <Text size="xs" c="dimmed">
-                      Nuestra destrucción: {r.ourDestruction.toFixed(1)}%
+                      Nuestra dest.: {r.ourDestruction.toFixed(1)}%
                     </Text>
                     <Text size="xs" c="dimmed">
-                      Su destrucción: {r.theirDestruction.toFixed(1)}%
+                      Su dest.: {r.theirDestruction.toFixed(1)}%
                     </Text>
                   </Group>
                 </Stack>
@@ -381,115 +380,167 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
             </Group>
           </Accordion.Control>
           <Accordion.Panel>
-            <Table verticalSpacing="sm">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>#</Table.Th>
-                  <Table.Th>Jugador</Table.Th>
-                  <Table.Th>TH</Table.Th>
-                  <Table.Th>Estrellas</Table.Th>
-                  <Table.Th>Triples</Table.Th>
-                  <Table.Th>Eficiencia</Table.Th>
-                  <Table.Th>Distribución</Table.Th>
-                  <Table.Th>Faltas</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
+            {isMobile ? (
+              <Stack gap="sm">
                 {players.map((p, i) => (
-                  <Table.Tr key={p.tag}>
-                    <Table.Td>
-                      <Text size="sm">{medals[i] ?? `#${i + 1}`}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
+                  <Card key={p.tag} withBorder radius="md" p="sm">
+                    <Group justify="space-between">
+                      <Group gap="sm">
+                        <Text size="sm">{medals[i] ?? `#${i + 1}`}</Text>
                         <Avatar color="yellow" radius="xl" size="sm">
                           {p.name.charAt(0)}
                         </Avatar>
-                        <Text size="sm" fw={600}>
-                          {p.name}
-                        </Text>
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge variant="light" color="cyan" size="sm">
-                        TH {p.townhallLevel}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={700} c="yellow">
-                        ⭐ {p.totalStars}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge
-                        color={p.threeStars > 0 ? "green" : "gray"}
-                        variant="light"
-                        size="sm"
-                      >
-                        {p.threeStars} triple{p.threeStars !== 1 ? "s" : ""}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Stack gap={2}>
-                        <Group gap="xs">
-                          <Progress
-                            value={p.efficiency}
-                            color={getScoreColor(p.efficiency)}
-                            size="sm"
-                            radius="xl"
-                            w={80}
-                          />
-                          <Text
-                            size="xs"
-                            fw={700}
-                            c={getScoreColor(p.efficiency)}
-                          >
-                            {p.efficiency}%
+                        <Stack gap={2}>
+                          <Text size="sm" fw={600}>
+                            {p.name}
                           </Text>
-                        </Group>
+                          <Group gap={4}>
+                            <Badge variant="light" color="cyan" size="xs">
+                              TH {p.townhallLevel}
+                            </Badge>
+                            <Text size="xs" c="yellow">
+                              ⭐ {p.totalStars}
+                            </Text>
+                          </Group>
+                        </Stack>
+                      </Group>
+                      <Stack gap={2} align="flex-end">
                         <Badge
                           size="xs"
                           color={getScoreColor(p.efficiency)}
-                          variant="light"
+                          variant="filled"
                         >
                           {getScoreLabel(p.efficiency)}
                         </Badge>
-                      </Stack>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={2}>
-                        <Badge size="xs" color="green" variant="light">
-                          3⭐×{p.threeStars}
-                        </Badge>
-                        <Badge size="xs" color="blue" variant="light">
-                          2⭐×{p.twoStars}
-                        </Badge>
-                        <Badge size="xs" color="yellow" variant="light">
-                          1⭐×{p.oneStar}
-                        </Badge>
-                        {p.zeroStars > 0 && (
-                          <Badge size="xs" color="red" variant="light">
-                            0⭐×{p.zeroStars}
+                        <Text size="xs" c={getScoreColor(p.efficiency)}>
+                          {p.efficiency}%
+                        </Text>
+                        {p.missedAttacks > 0 ? (
+                          <Badge color="red" variant="light" size="xs">
+                            {p.missedAttacks} falta
+                            {p.missedAttacks > 1 ? "s" : ""}
+                          </Badge>
+                        ) : (
+                          <Badge color="green" variant="light" size="xs">
+                            ✓
                           </Badge>
                         )}
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      {p.missedAttacks > 0 ? (
-                        <Badge color="red" variant="light" size="sm">
-                          {p.missedAttacks} falta
-                          {p.missedAttacks > 1 ? "s" : ""}
-                        </Badge>
-                      ) : (
-                        <Badge color="green" variant="light" size="sm">
-                          ✓
-                        </Badge>
-                      )}
-                    </Table.Td>
-                  </Table.Tr>
+                      </Stack>
+                    </Group>
+                  </Card>
                 ))}
-              </Table.Tbody>
-            </Table>
+              </Stack>
+            ) : (
+              <Table verticalSpacing="sm">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>#</Table.Th>
+                    <Table.Th>Jugador</Table.Th>
+                    <Table.Th>TH</Table.Th>
+                    <Table.Th>Estrellas</Table.Th>
+                    <Table.Th>Triples</Table.Th>
+                    <Table.Th>Eficiencia</Table.Th>
+                    <Table.Th>Distribución</Table.Th>
+                    <Table.Th>Faltas</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {players.map((p, i) => (
+                    <Table.Tr key={p.tag}>
+                      <Table.Td>
+                        <Text size="sm">{medals[i] ?? `#${i + 1}`}</Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap="xs">
+                          <Avatar color="yellow" radius="xl" size="sm">
+                            {p.name.charAt(0)}
+                          </Avatar>
+                          <Text size="sm" fw={600}>
+                            {p.name}
+                          </Text>
+                        </Group>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge variant="light" color="cyan" size="sm">
+                          TH {p.townhallLevel}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" fw={700} c="yellow">
+                          ⭐ {p.totalStars}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Badge
+                          color={p.threeStars > 0 ? "green" : "gray"}
+                          variant="light"
+                          size="sm"
+                        >
+                          {p.threeStars} triple{p.threeStars !== 1 ? "s" : ""}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td>
+                        <Stack gap={2}>
+                          <Group gap="xs">
+                            <Progress
+                              value={p.efficiency}
+                              color={getScoreColor(p.efficiency)}
+                              size="sm"
+                              radius="xl"
+                              w={80}
+                            />
+                            <Text
+                              size="xs"
+                              fw={700}
+                              c={getScoreColor(p.efficiency)}
+                            >
+                              {p.efficiency}%
+                            </Text>
+                          </Group>
+                          <Badge
+                            size="xs"
+                            color={getScoreColor(p.efficiency)}
+                            variant="light"
+                          >
+                            {getScoreLabel(p.efficiency)}
+                          </Badge>
+                        </Stack>
+                      </Table.Td>
+                      <Table.Td>
+                        <Group gap={2}>
+                          <Badge size="xs" color="green" variant="light">
+                            3⭐×{p.threeStars}
+                          </Badge>
+                          <Badge size="xs" color="blue" variant="light">
+                            2⭐×{p.twoStars}
+                          </Badge>
+                          <Badge size="xs" color="yellow" variant="light">
+                            1⭐×{p.oneStar}
+                          </Badge>
+                          {p.zeroStars > 0 && (
+                            <Badge size="xs" color="red" variant="light">
+                              0⭐×{p.zeroStars}
+                            </Badge>
+                          )}
+                        </Group>
+                      </Table.Td>
+                      <Table.Td>
+                        {p.missedAttacks > 0 ? (
+                          <Badge color="red" variant="light" size="sm">
+                            {p.missedAttacks} falta
+                            {p.missedAttacks > 1 ? "s" : ""}
+                          </Badge>
+                        ) : (
+                          <Badge color="green" variant="light" size="sm">
+                            ✓
+                          </Badge>
+                        )}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
           </Accordion.Panel>
         </Accordion.Item>
 
@@ -549,7 +600,7 @@ export default function CWLStats({ wars, ourClanTag }: CWLStatsProps) {
               {repeatOffenders.length > 0 && (
                 <Stack gap="xs">
                   <Text size="sm" fw={600} c="orange">
-                    Faltas repetidas (2+ rondas sin atacar)
+                    Faltas repetidas (2+ rondas)
                   </Text>
                   <Group gap="xs">
                     {repeatOffenders.map((p) => (

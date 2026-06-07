@@ -12,7 +12,6 @@ import {
   Group,
   ActionIcon,
   Tooltip,
-  Badge,
 } from "@mantine/core";
 import {
   IconUsers,
@@ -251,7 +250,6 @@ export default function HomePage() {
                 members={mainData.members}
                 currentWar={mainData.currentWar}
                 capitalSeasons={mainData.capitalSeasons}
-                ourClanTag={mainData.clan?.tag || ""}
               />
             </Tabs.Panel>
           </Tabs>
